@@ -28,11 +28,12 @@ const GTFS_RT_URL = 'https://gtfsrt.api.translink.com.au/api/realtime/SEQ/TripUp
  *
  * stopIds        — TransLink stop IDs to match against in the GTFS-RT feed.
  *                  Each physical platform has its own stop ID.
- * directionId    — GTFS direction_id filter. 0 = inbound (toward city) for Albion.
- *                  Omit to skip direction filtering.
  * requiredStopIds — If set, only include trips that also call at one of these
- *                  stops AFTER the target stop. Used to confirm Roma St trains
- *                  will actually reach Milton.
+ *                  stops AFTER the target stop. Used for two purposes:
+ *                  1. Albion: confirms the train is heading citybound by checking
+ *                     Roma Street appears downstream (direction_id alone is
+ *                     unreliable — TransLink's convention varies per route).
+ *                  2. Roma-Milton: confirms the Roma St train reaches Milton.
  * useDestination — If true, decode line name from the route ID destination
  *                  (chars 2–4) rather than origin (chars 0–2). At Roma Street
  *                  heading west, the destination is more useful to the user.
@@ -40,7 +41,10 @@ const GTFS_RT_URL = 'https://gtfsrt.api.translink.com.au/api/realtime/SEQ/TripUp
 const MODES = {
   albion: {
     stopIds: ['600365', '600366', '600368'],
-    directionId: 0,
+    // Confirm the train is heading citybound by checking Roma Street appears
+    // downstream. direction_id alone is unreliable — TransLink's convention
+    // varies per route, so some outbound trains also have directionId 0.
+    requiredStopIds: ['600028', '600029', '600030', '600033', '600034', '600035', '600036', '600038'],
     useDestination: false,
   },
   'roma-milton': {
@@ -184,13 +188,6 @@ function getDepartures(feed, mode) {
     // Deduplicate by trip ID to avoid double-counting the same service
     const tripId = tu.trip?.tripId;
     if (tripId && seenTripIds.has(tripId)) continue;
-
-    // Filter by direction_id where configured
-    if (
-      config.directionId !== undefined &&
-      tu.trip?.directionId !== undefined &&
-      tu.trip.directionId !== config.directionId
-    ) continue;
 
     // Find the stop time update for our target stop.
     // Prefer assignedStopId from stopTimeProperties if present — TransLink
