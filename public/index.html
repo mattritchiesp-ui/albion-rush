@@ -17,13 +17,11 @@
     }
 
     header {
-      padding: 20px 16px 14px;
-      border-bottom: 1px solid #1e1e1e;
-    }
-    header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 20px 16px 14px;
+      border-bottom: 1px solid #1e1e1e;
     }
     header h1 {
       font-size: 20px;
@@ -43,6 +41,36 @@
       color: #fff;
       letter-spacing: 0.02em;
     }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #1a1a1a;
+      border-bottom: 2px solid #222;
+    }
+    .tab {
+      flex: 1;
+      padding: 13px 8px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+      border: none;
+      background: none;
+      letter-spacing: 0.03em;
+      transition: color 0.15s;
+    }
+    .tab.active {
+      color: #fff;
+      border-bottom: 3px solid #4fc3f7;
+      margin-bottom: -2px;
+    }
+    .tab:hover:not(.active) { color: #aaa; }
+
+    /* Views */
+    .view { display: none; flex: 1; flex-direction: column; }
+    .view.active { display: flex; }
 
     main {
       flex: 1;
@@ -79,8 +107,16 @@
       font-weight: 600;
       color: #aaa;
     }
-    .departure.next .dep-line {
-      color: #ddd;
+    .departure.next .dep-line { color: #ddd; }
+
+    .dep-platform {
+      background: #263238;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #4fc3f7;
+      white-space: nowrap;
     }
 
     .dep-minutes {
@@ -89,6 +125,7 @@
       color: #4fc3f7;
       text-align: right;
       line-height: 1;
+      min-width: 52px;
     }
     .dep-minutes .min-label {
       font-size: 11px;
@@ -97,9 +134,7 @@
       display: block;
       text-align: right;
     }
-    .dep-minutes.urgent {
-      color: #ef5350;
-    }
+    .dep-minutes.urgent { color: #ef5350; }
 
     .empty-msg {
       text-align: center;
@@ -141,23 +176,41 @@
 
 <header>
   <div>
-    <h1>Albion</h1>
-    <p>Next trains toward Roma Street</p>
+    <h1 id="header-title">Albion</h1>
+    <p id="header-sub">Next trains toward Roma Street</p>
   </div>
   <div id="clock"></div>
 </header>
 
-<main id="list">
-  <div class="empty-msg">Loading...</div>
-</main>
+<div class="tabs">
+  <button class="tab active" data-mode="albion" onclick="switchTab('albion')">Albion</button>
+  <button class="tab" data-mode="roma-milton" onclick="switchTab('roma-milton')">→ Milton</button>
+</div>
 
-<footer>
-  <span id="updated">—</span>
-  <button class="refresh-btn" onclick="load()">↻ Refresh</button>
-</footer>
+<div class="view active" id="view-albion">
+  <main id="list-albion"><div class="empty-msg">Loading...</div></main>
+  <footer>
+    <span id="updated-albion">—</span>
+    <button class="refresh-btn" onclick="load('albion')">↻ Refresh</button>
+  </footer>
+</div>
+
+<div class="view" id="view-roma-milton">
+  <main id="list-roma-milton"><div class="empty-msg">Loading...</div></main>
+  <footer>
+    <span id="updated-roma-milton">—</span>
+    <button class="refresh-btn" onclick="load('roma-milton')">↻ Refresh</button>
+  </footer>
+</div>
 
 <script>
-  let tickTimer = null;
+  const HEADERS = {
+    'albion':      { title: 'Albion',      sub: 'Next trains toward Roma Street' },
+    'roma-milton': { title: 'Roma Street', sub: 'Next trains stopping at Milton' },
+  };
+
+  let currentTab = 'albion';
+  let tickTimers = {};
 
   function formatTime(ts) {
     return new Date(ts * 1000)
@@ -165,55 +218,80 @@
       .replace(/am|pm/i, m => m.toUpperCase());
   }
 
-  async function load() {
+  function updateClock() {
+    document.getElementById('clock').textContent = formatTime(Date.now() / 1000);
+  }
+
+  async function load(mode) {
     try {
-      const res = await fetch('/api/departures');
+      const res = await fetch(`/api/departures?mode=${mode}`);
       if (!res.ok) throw new Error(await res.text());
       const { departures, fetchedAt } = await res.json();
 
-      const list = document.getElementById('list');
+      const list = document.getElementById(`list-${mode}`);
 
       if (!departures || departures.length === 0) {
         list.innerHTML = '<div class="empty-msg">No departures found</div>';
       } else {
-        list.innerHTML = departures.map((d, i) => `
-          <div class="departure${i === 0 ? ' next' : ''}">
-            <div class="dep-time">${formatTime(d.departureTs)}</div>
-            <div class="dep-line">${d.line}</div>
-            <div class="dep-minutes${d.minutes < 5 ? ' urgent' : ''}">
-              ${d.minutes}<span class="min-label">min</span>
+        list.innerHTML = departures.map((d, i) => {
+          const platformBadge = d.platform
+            ? `<div class="dep-platform">Plat ${d.platform}</div>`
+            : '';
+          return `
+            <div class="departure${i === 0 ? ' next' : ''}">
+              <div class="dep-time">${formatTime(d.departureTs)}</div>
+              <div class="dep-line">${d.line}</div>
+              ${platformBadge}
+              <div class="dep-minutes${d.minutes < 5 ? ' urgent' : ''}">
+                ${d.minutes}<span class="min-label">min</span>
+              </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
       // Tick counter
-      clearInterval(tickTimer);
+      clearInterval(tickTimers[mode]);
       const loadedAt = Date.now();
-      const updEl = document.getElementById('updated');
+      const updEl = document.getElementById(`updated-${mode}`);
       const tick = () => {
         const secs = Math.round((Date.now() - loadedAt) / 1000);
         updEl.textContent = secs < 5 ? 'Just updated' : `Updated ${secs}s ago`;
       };
       tick();
-      tickTimer = setInterval(tick, 1000);
+      tickTimers[mode] = setInterval(tick, 1000);
 
     } catch (err) {
-      document.getElementById('list').innerHTML =
+      document.getElementById(`list-${mode}`).innerHTML =
         `<div class="error-msg">Could not fetch live data.<br>${err.message}</div>`;
     }
   }
 
-  function updateClock() {
-    document.getElementById('clock').textContent = new Date()
-      .toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
-      .replace(/am|pm/i, m => m.toUpperCase());
+  function switchTab(mode) {
+    currentTab = mode;
+
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.mode === mode);
+    });
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(`view-${mode}`).classList.add('active');
+
+    const h = HEADERS[mode];
+    document.getElementById('header-title').textContent = h.title;
+    document.getElementById('header-sub').textContent = h.sub;
+
+    load(mode);
   }
+
+  // Auto-refresh every 20s for current tab
+  setInterval(() => load(currentTab), 20000);
+
+  // Clock
   updateClock();
   setInterval(updateClock, 1000);
 
-  setInterval(load, 20000);
-  load();
+  // Initial load
+  load('albion');
 </script>
 
 </body>
