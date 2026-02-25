@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Train Rush</title>
+  <title>Albion Departures</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -16,160 +16,95 @@
       flex-direction: column;
     }
 
-    /* Tab bar */
-    .tabs {
+    header {
+      padding: 20px 16px 14px;
+      border-bottom: 1px solid #1e1e1e;
+    }
+    header {
       display: flex;
-      background: #1a1a1a;
-      border-bottom: 2px solid #333;
+      align-items: center;
+      justify-content: space-between;
     }
-    .tab {
-      flex: 1;
-      padding: 14px 8px;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 600;
-      color: #888;
-      cursor: pointer;
-      border: none;
-      background: none;
-      letter-spacing: 0.03em;
-      transition: color 0.15s;
-    }
-    .tab.active {
-      color: #fff;
-      border-bottom: 3px solid #4fc3f7;
-      margin-bottom: -2px;
-    }
-    .tab:hover:not(.active) { color: #ccc; }
-
-    /* Main content */
-    .view { display: none; flex: 1; flex-direction: column; padding: 16px; gap: 16px; }
-    .view.active { display: flex; }
-
-    /* Status banner (mode 1 only) */
-    .status-banner {
-      border-radius: 12px;
-      padding: 20px 16px;
-      text-align: center;
-    }
-    .status-banner .status-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      opacity: 0.85;
-      margin-bottom: 6px;
-    }
-    .status-banner .status-msg {
-      font-size: 24px;
+    header h1 {
+      font-size: 20px;
       font-weight: 800;
-      line-height: 1.2;
-    }
-    .status-banner.relax  { background: #1b5e20; }
-    .status-banner.normal { background: #1b5e20; }
-    .status-banner.hurry  { background: #e65100; }
-    .status-banner.rush   { background: #b71c1c; }
-    .status-banner.missed { background: #4a148c; }
-    .status-banner.loading { background: #263238; }
-    .status-banner.error  { background: #37474f; }
-
-    /* Platform badge (modes 2 & 3) */
-    .platform-section {
-      text-align: center;
-      padding: 12px 0 4px;
-    }
-    .platform-label {
-      font-size: 12px;
-      color: #888;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 4px;
-    }
-    .platform-number {
-      font-size: 72px;
-      font-weight: 900;
       color: #4fc3f7;
-      line-height: 1;
     }
-    .platform-number.unknown { color: #555; font-size: 40px; }
+    header p {
+      font-size: 13px;
+      color: #555;
+      margin-top: 3px;
+    }
+    #clock {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
 
-    /* Departure list */
-    .departures { display: flex; flex-direction: column; gap: 10px; }
+    main {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     .departure {
       display: flex;
       align-items: center;
       background: #1e1e1e;
       border-radius: 10px;
-      padding: 14px 16px;
-      border-left: 4px solid #333;
-      gap: 12px;
+      padding: 16px;
+      gap: 16px;
+      border-left: 3px solid transparent;
     }
-    .departure.next { border-left-color: #4fc3f7; background: #1a2a35; }
-    .departure.urgent { border-left-color: #ef5350; background: #2a1515; }
+    .departure.next {
+      background: #1a2a35;
+      border-left-color: #4fc3f7;
+    }
+
+    .dep-time {
+      font-size: 20px;
+      font-weight: 700;
+      min-width: 82px;
+      color: #fff;
+    }
+
+    .dep-line {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 600;
+      color: #aaa;
+    }
+    .departure.next .dep-line {
+      color: #ddd;
+    }
 
     .dep-minutes {
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 800;
-      min-width: 56px;
+      color: #4fc3f7;
       text-align: right;
       line-height: 1;
     }
     .dep-minutes .min-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
-      color: #888;
+      color: #555;
       display: block;
       text-align: right;
     }
-
-    .dep-info { flex: 1; }
-    .dep-headsign {
-      font-size: 16px;
-      font-weight: 600;
+    .dep-minutes.urgent {
+      color: #ef5350;
     }
-
-    .dep-time {
-      font-size: 18px;
-      font-weight: 700;
-      color: #ccc;
-      text-align: right;
-    }
-
-    .dep-platform-badge {
-      background: #263238;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 14px;
-      font-weight: 700;
-      color: #4fc3f7;
-      white-space: nowrap;
-    }
-
-    /* Footer */
-    .footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: #555;
-      font-size: 12px;
-      padding-top: 4px;
-    }
-    .refresh-btn {
-      background: none;
-      border: 1px solid #444;
-      color: #888;
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .refresh-btn:hover { border-color: #888; color: #fff; }
 
     .empty-msg {
       text-align: center;
       color: #555;
-      padding: 30px 0;
+      padding: 40px 0;
       font-size: 15px;
     }
 
@@ -181,203 +116,105 @@
       text-align: center;
       font-size: 14px;
     }
+
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 24px;
+      color: #444;
+      font-size: 12px;
+    }
+    .refresh-btn {
+      background: none;
+      border: 1px solid #333;
+      color: #666;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .refresh-btn:hover { border-color: #888; color: #fff; }
   </style>
 </head>
 <body>
 
-<!-- Tab bar -->
-<div class="tabs">
-  <button class="tab active" onclick="switchMode('albion')">🏠 Home</button>
-  <button class="tab" onclick="switchMode('to-milton')">→ Milton</button>
-  <button class="tab" onclick="switchMode('to-albion')">← Albion</button>
-</div>
+<header>
+  <div>
+    <h1>Albion</h1>
+    <p>Next trains toward Roma Street</p>
+  </div>
+  <div id="clock"></div>
+</header>
 
-<!-- Mode 1: Home (Albion Rush) -->
-<div class="view active" id="view-albion">
-  <div id="banner-albion" class="status-banner loading">
-    <div class="status-label">Status</div>
-    <div class="status-msg">Loading...</div>
-  </div>
-  <div class="departures" id="list-albion"></div>
-  <div class="footer">
-    <span id="updated-albion">—</span>
-    <button class="refresh-btn" onclick="loadMode('albion')">↻ Refresh</button>
-  </div>
-</div>
+<main id="list">
+  <div class="empty-msg">Loading...</div>
+</main>
 
-<!-- Mode 2: Roma Street → Milton -->
-<div class="view" id="view-to-milton">
-  <div class="platform-section">
-    <div class="platform-label">Board at platform</div>
-    <div class="platform-number unknown" id="platform-to-milton">?</div>
-  </div>
-  <div class="departures" id="list-to-milton"></div>
-  <div class="footer">
-    <span id="updated-to-milton">—</span>
-    <button class="refresh-btn" onclick="loadMode('to-milton')">↻ Refresh</button>
-  </div>
-</div>
-
-<!-- Mode 3: Roma Street → Albion -->
-<div class="view" id="view-to-albion">
-  <div class="platform-section">
-    <div class="platform-label">Board at platform</div>
-    <div class="platform-number unknown" id="platform-to-albion">?</div>
-  </div>
-  <div class="departures" id="list-to-albion"></div>
-  <div class="footer">
-    <span id="updated-to-albion">—</span>
-    <button class="refresh-btn" onclick="loadMode('to-albion')">↻ Refresh</button>
-  </div>
-</div>
+<footer>
+  <span id="updated">—</span>
+  <button class="refresh-btn" onclick="load()">↻ Refresh</button>
+</footer>
 
 <script>
-  // Walk time thresholds (minutes from Albion to home)
-  // User is ~3 min from leaving once they check
-  // slow walk: 12+ min, normal: 11, fast: 10
-  const WALK_BUFFER = 3; // time before leaving after checking
-  const WALK_FAST   = 10;
-  const WALK_NORMAL = 11;
-  const WALK_SLOW   = 12;
+  let tickTimer = null;
 
-  let currentMode = 'albion';
-  let refreshTimers = {};
-
-  function getStatus(minutes) {
-    const effective = minutes - WALK_BUFFER;
-    if (effective >= WALK_SLOW + 2) return { cls: 'relax',  label: 'Plenty of time', msg: 'No rush — take your time' };
-    if (effective >= WALK_SLOW)     return { cls: 'normal', label: 'On time',         msg: 'Leave normally' };
-    if (effective >= WALK_NORMAL)   return { cls: 'hurry',  label: 'Leave soon',      msg: 'Leave now — normal walk' };
-    if (effective >= WALK_FAST)     return { cls: 'rush',   label: 'Go now!',         msg: 'Leave NOW — walk fast' };
-    return                                 { cls: 'missed', label: 'Too late',         msg: 'Missed it — catch the next' };
+  function formatTime(ts) {
+    return new Date(ts * 1000)
+      .toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
+      .replace(/am|pm/i, m => m.toUpperCase());
   }
 
-  function formatUpdated(fetchedAt) {
-    const secs = Math.round((Date.now() - fetchedAt) / 1000);
-    if (secs < 5) return 'Just updated';
-    return `Updated ${secs}s ago`;
-  }
-
-  function renderDeparture(dep, index, showPlatform) {
-    const isNext = index === 0;
-    const isUrgent = dep.minutes < 5;
-    let cls = '';
-    if (isNext) cls = 'next';
-    if (isUrgent) cls = 'urgent';
-
-    const lineName = dep.routeId || dep.headsign || 'Train';
-    const platformBadge = showPlatform
-      ? `<div class="dep-platform-badge">Platform ${dep.platform}</div>`
-      : '';
-
-    return `
-      <div class="departure ${cls}">
-        <div class="dep-minutes">
-          ${dep.minutes}<span class="min-label">min</span>
-        </div>
-        <div class="dep-info">
-          <div class="dep-headsign">${lineName}</div>
-        </div>
-        ${platformBadge}
-        <div class="dep-time">${dep.scheduledTime}</div>
-      </div>
-    `;
-  }
-
-  async function loadMode(mode) {
+  async function load() {
     try {
-      const res = await fetch(`/api/departures?mode=${mode}`);
+      const res = await fetch('/api/departures');
       if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
+      const { departures, fetchedAt } = await res.json();
 
-      const { departures, fetchedAt } = data;
-      const showPlatform = mode !== 'albion';
+      const list = document.getElementById('list');
 
-      // Render departure list
-      const listEl = document.getElementById(`list-${mode}`);
       if (!departures || departures.length === 0) {
-        listEl.innerHTML = '<div class="empty-msg">No departures found — check TransLink</div>';
+        list.innerHTML = '<div class="empty-msg">No departures found</div>';
       } else {
-        listEl.innerHTML = departures.map((d, i) => renderDeparture(d, i, showPlatform)).join('');
+        list.innerHTML = departures.map((d, i) => `
+          <div class="departure${i === 0 ? ' next' : ''}">
+            <div class="dep-time">${formatTime(d.departureTs)}</div>
+            <div class="dep-line">${d.line}</div>
+            <div class="dep-minutes${d.minutes < 5 ? ' urgent' : ''}">
+              ${d.minutes}<span class="min-label">min</span>
+            </div>
+          </div>
+        `).join('');
       }
 
-      // Update footer timestamp
-      const updEl = document.getElementById(`updated-${mode}`);
-      if (updEl) updEl.textContent = formatUpdated(fetchedAt);
-
-      // Mode 1: status banner
-      if (mode === 'albion') {
-        const banner = document.getElementById('banner-albion');
-        if (departures && departures.length > 0) {
-          const s = getStatus(departures[0].minutes);
-          banner.className = `status-banner ${s.cls}`;
-          banner.innerHTML = `<div class="status-label">${s.label}</div><div class="status-msg">${s.msg}</div>`;
-        } else {
-          banner.className = 'status-banner error';
-          banner.innerHTML = '<div class="status-label">No data</div><div class="status-msg">No departures found</div>';
-        }
-      }
-
-      // Modes 2 & 3: platform number
-      if (mode !== 'albion') {
-        const platEl = document.getElementById(`platform-${mode}`);
-        if (departures && departures.length > 0 && departures[0].platform !== '?') {
-          platEl.textContent = departures[0].platform;
-          platEl.className = 'platform-number';
-        } else {
-          platEl.textContent = '?';
-          platEl.className = 'platform-number unknown';
-        }
-      }
-
-    } catch (err) {
-      const listEl = document.getElementById(`list-${mode}`);
-      listEl.innerHTML = `<div class="error-msg">Could not fetch live data.<br>${err.message}</div>`;
-      if (mode === 'albion') {
-        const banner = document.getElementById('banner-albion');
-        banner.className = 'status-banner error';
-        banner.innerHTML = '<div class="status-label">Error</div><div class="status-msg">No data available</div>';
-      }
-    }
-
-    // Update "X seconds ago" counter every second
-    clearInterval(refreshTimers[`${mode}-tick`]);
-    const updEl = document.getElementById(`updated-${mode}`);
-    const loadedAt = Date.now();
-    refreshTimers[`${mode}-tick`] = setInterval(() => {
-      if (updEl) {
+      // Tick counter
+      clearInterval(tickTimer);
+      const loadedAt = Date.now();
+      const updEl = document.getElementById('updated');
+      const tick = () => {
         const secs = Math.round((Date.now() - loadedAt) / 1000);
         updEl.textContent = secs < 5 ? 'Just updated' : `Updated ${secs}s ago`;
-      }
-    }, 1000);
+      };
+      tick();
+      tickTimer = setInterval(tick, 1000);
+
+    } catch (err) {
+      document.getElementById('list').innerHTML =
+        `<div class="error-msg">Could not fetch live data.<br>${err.message}</div>`;
+    }
   }
 
-  function switchMode(mode) {
-    currentMode = mode;
-
-    // Update tab styles
-    document.querySelectorAll('.tab').forEach((t, i) => {
-      t.classList.toggle('active', ['albion', 'to-milton', 'to-albion'][i] === mode);
-    });
-
-    // Update views
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(`view-${mode}`).classList.add('active');
-
-    // Load data for this mode
-    loadMode(mode);
+  function updateClock() {
+    document.getElementById('clock').textContent = new Date()
+      .toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
+      .replace(/am|pm/i, m => m.toUpperCase());
   }
+  updateClock();
+  setInterval(updateClock, 1000);
 
-  // Auto-refresh every 20 seconds for the current mode
-  function startAutoRefresh() {
-    setInterval(() => {
-      loadMode(currentMode);
-    }, 20000);
-  }
-
-  // Initial load
-  loadMode('albion');
-  startAutoRefresh();
+  setInterval(load, 20000);
+  load();
 </script>
+
 </body>
 </html>
