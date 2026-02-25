@@ -204,29 +204,52 @@
 </div>
 
 <script>
+  /**
+   * Header text for each tab. Shown in the page header when that tab is active.
+   */
   const HEADERS = {
     'albion':      { title: 'Albion',      sub: 'Next trains toward Roma Street' },
     'roma-milton': { title: 'Roma Street', sub: 'Next trains stopping at Milton' },
   };
 
+  /** Currently active tab mode. Used by the auto-refresh interval. */
   let currentTab = 'albion';
+
+  /**
+   * Holds setInterval IDs for the "Updated X secs ago" counters, keyed by mode.
+   * Stored so the previous interval can be cleared when data is refreshed.
+   */
   let tickTimers = {};
 
+  /**
+   * Formats a UNIX timestamp (seconds) as a local time string.
+   * e.g. 1234567890 → "7:42 AM"
+   *
+   * @param {number} ts - UNIX timestamp in seconds
+   * @returns {string}
+   */
   function formatTime(ts) {
     return new Date(ts * 1000)
       .toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
       .replace(/am|pm/i, m => m.toUpperCase());
   }
 
+  /** Updates the header clock to the current time. Called every second. */
   function updateClock() {
     document.getElementById('clock').textContent = formatTime(Date.now() / 1000);
   }
 
+  /**
+   * Fetches departures from the API for the given mode and renders them.
+   * Also starts a "Updated X secs ago" tick counter in the footer.
+   *
+   * @param {string} mode - 'albion' or 'roma-milton'
+   */
   async function load(mode) {
     try {
       const res = await fetch(`/api/departures?mode=${mode}`);
       if (!res.ok) throw new Error(await res.text());
-      const { departures, fetchedAt } = await res.json();
+      const { departures } = await res.json();
 
       const list = document.getElementById(`list-${mode}`);
 
@@ -234,9 +257,11 @@
         list.innerHTML = '<div class="empty-msg">No departures found</div>';
       } else {
         list.innerHTML = departures.map((d, i) => {
+          // Platform badge is only shown when the server includes platform data
           const platformBadge = d.platform
             ? `<div class="dep-platform">Plat ${d.platform}</div>`
             : '';
+          // First departure gets a highlighted style; <5 min gets urgent colouring
           return `
             <div class="departure${i === 0 ? ' next' : ''}">
               <div class="dep-time">${formatTime(d.departureTs)}</div>
@@ -250,7 +275,7 @@
         }).join('');
       }
 
-      // Tick counter
+      // Start a per-second tick so the footer shows "Updated X secs ago"
       clearInterval(tickTimers[mode]);
       const loadedAt = Date.now();
       const updEl = document.getElementById(`updated-${mode}`);
@@ -267,6 +292,12 @@
     }
   }
 
+  /**
+   * Switches the active tab, updates the header, and loads data for the new tab.
+   * Tab buttons use data-mode attributes so matching doesn't depend on DOM order.
+   *
+   * @param {string} mode - 'albion' or 'roma-milton'
+   */
   function switchTab(mode) {
     currentTab = mode;
 
@@ -283,14 +314,15 @@
     load(mode);
   }
 
-  // Auto-refresh every 20s for current tab
+  // Auto-refresh the active tab every 20 seconds.
+  // Only refreshes the visible tab to avoid unnecessary API calls.
   setInterval(() => load(currentTab), 20000);
 
-  // Clock
+  // Tick the header clock every second
   updateClock();
   setInterval(updateClock, 1000);
 
-  // Initial load
+  // Load the default tab on page open
   load('albion');
 </script>
 
