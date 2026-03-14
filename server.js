@@ -228,7 +228,7 @@ function getDepartures(feed, mode) {
 
     const result = {
       line: lineName(tu.trip?.routeId || '', config.useDestination),
-      minutes: Math.round((depTimeSec - now) / 60),
+      minutes: Math.max(0, Math.round((depTimeSec - now) / 60)),
       departureTs: depTimeSec,
     };
 
